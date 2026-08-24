@@ -21,7 +21,7 @@ nbdist/
 dependency-reduced-pom.xml
 
 # ==============================================
-# MAVEN WRAPPER (احتفظ بالـ wrapper نفسه لكن امسح الـ jar)
+# MAVEN WRAPPER
 # ==============================================
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -75,7 +75,7 @@ Thumbs.db
 *.bak
 
 # ==============================================
-# APPLICATION CONFIGURATION (حساسة)
+# APPLICATION CONFIGURATION
 # ==============================================
 application-local.yaml
 application-prod.yaml
@@ -86,7 +86,7 @@ application-dev.yaml
 .env.local
 
 # ==============================================
-# UPLOADED FILES (الـ CVs)
+# UPLOADED FILES (CVs)
 # ==============================================
 uploads/
 uploads/**/*.pdf
