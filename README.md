@@ -35,7 +35,9 @@ The **Recruitment Management Platform** is a RESTful web application that provid
 - **Register/Login** for `ADMIN`, `HR`, `INTERVIEWER`, and `CANDIDATE` roles.
 - **Role-Based Access Control (RBAC)** with Spring Security.
 - **JWT Authentication** (token generation & validation).
+- **JWT Refresh Token** for seamless session renewal without re-login.
 - **LDAP Integration** for enterprise authentication (embedded LDAP server).
+- **No Hardcoded Credentials**: All default credentials are loaded from `application.yaml`.
 
 ### 👤 Candidate Management Service
 - **Single & Bulk CV Upload** (supports PDF, DOC, DOCX).
@@ -49,6 +51,12 @@ The **Recruitment Management Platform** is a RESTful web application that provid
 - **Audit Logs**: Every status change is recorded with timestamp and user.
 - **Assign Recruiters & Interviewers** to applications.
 - **Interview Feedback**: Interviewers can submit scores (0–10) and comments.
+
+### 🚀 Performance Optimizations
+- **API Pagination** on all list endpoints to reduce payload size and improve response time.
+- **Database Indexing** on frequently queried fields (email, status, appliedAt) for faster search.
+- **Caching** (using Spring Cache) to reduce database load and speed up repeated read operations.
+- **SQL Injection Prevention** automatically handled via Spring Data JPA (PreparedStatement).
 
 ---
 
@@ -75,6 +83,8 @@ The **Recruitment Management Platform** is a RESTful web application that provid
 The application follows a **layered architecture**:
 
 
+
+
 ┌─────────────────────────────────────────────────────┐
 │ Web/API Layer │
 │ (Controllers: Auth, Candidate, Job, Application) │
@@ -90,11 +100,13 @@ The application follows a **layered architecture**:
 
 
 
-### Security Flow: User → Login → Authentication Manager (LDAP + MySQL) → JWT Token → Subsequent Requests (Bearer Token)
+### Security Flow: User → Login → AuthenticationManager (LDAP + MySQL) → JWT Token → Subsequent Requests (Bearer Token)
+Refresh Token → /api/auth/refresh → New Access Token
 
 
 
-------------
+
+----------
 
 ## ⚙️ Setup & Installation
 
@@ -103,8 +115,8 @@ The application follows a **layered architecture**:
 - **MySQL 8.x** (running locally)
 - **Maven** (or use the included Maven wrapper)
 
-### Step 1: Clone the Repository  ```bash
-git clone https://github.com/MOhamedMahrous2004/recruitment-platform.git 
+### Step 1: Clone the Repository    ```bash
+git clone https://github.com/MOhamedMahrous2004/recruitment-platform.git
 cd recruitment-platform
 
 -------------
@@ -116,6 +128,8 @@ spring:
     url: jdbc:mysql://localhost:3306/recruitment_db
     username: root
     password: your_password
+
+All default admin/HR credentials are also defined in application.yaml under app.security.
 
 ------------
 Step 3: Build and Run
@@ -152,6 +166,7 @@ Major Endpoints:
 
 Method	      Endpoint	                                      Description	                Roles
 POST	        /api/auth/login	                                Login & JWT generation	    Public
+POST	        /api/auth/refresh	                              Refresh access token      	Public
 GET	          /api/admin/test	                                Admin test endpoint	        ADMIN
 GET	          /api/hr/candidates	                            Search candidates	          HR, ADMIN
 POST	        /api/candidate/profile/cv	                      Upload single CV	          CANDIDATE
@@ -180,11 +195,16 @@ Test Coverage:
 
 ✅ JWT token generation and validation.
 
+✅ Refresh token flow.
+
 ✅ Candidate CV upload and parsing.
 
 ✅ Application lifecycle (apply → status change → history).
 
 ✅ Interview feedback submission.
+
+✅ Pagination and caching behavior.
+
 
 -------------------
 👥 Contributors
