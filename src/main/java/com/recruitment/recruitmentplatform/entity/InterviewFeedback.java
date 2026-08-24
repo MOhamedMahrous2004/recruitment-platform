@@ -6,16 +6,16 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "interview_feedback")
+@Table(name = "interview_feedback", indexes = {
+        @Index(name = "idx_feedback_app_id", columnList = "application_id"),
+        @Index(name = "idx_feedback_interviewer_id", columnList = "interviewer_id")
+})
 public class InterviewFeedback {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /*
-     * Application being evaluated.
-     */
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -24,9 +24,6 @@ public class InterviewFeedback {
     )
     private Application application;
 
-    /*
-     * Interviewer who submitted the feedback.
-     */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(
             name = "interviewer_id",
@@ -34,24 +31,15 @@ public class InterviewFeedback {
     )
     private User interviewer;
 
-    /*
-     * Evaluation score from 0 to 10.
-     */
     @Column(nullable = false)
     private Integer evaluationScore;
 
-    /*
-     * Interview feedback/comments.
-     */
     @Column(
             nullable = false,
             length = 5000
     )
     private String feedback;
 
-    /*
-     * Date and time of evaluation.
-     */
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

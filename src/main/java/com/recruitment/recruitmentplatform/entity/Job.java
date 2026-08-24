@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "jobs")
+@Table(name = "jobs", indexes = {
+        @Index(name = "idx_job_title", columnList = "title"),
+        @Index(name = "idx_job_created_by", columnList = "created_by_id")
+})
 public class Job {
 
     @Id
@@ -29,14 +32,6 @@ public class Job {
     @Column(nullable = false)
     private String salary;
 
-    /*
-     * User who created the job.
-     *
-     * ADMIN or HR.
-     *
-     * This relation is not returned in the JSON response
-     * to prevent exposing user information.
-     */
     @JsonIgnore
     @ManyToOne
     @JoinColumn(

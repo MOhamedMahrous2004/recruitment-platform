@@ -1,29 +1,19 @@
 package com.recruitment.recruitmentplatform.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "candidates")
+@Table(name = "candidates", indexes = {
+        @Index(name = "idx_candidate_email", columnList = "email"),
+        @Index(name = "idx_candidate_user_id", columnList = "user_id")
+})
 public class Candidate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /*
-     * Link Candidate to the existing User account.
-     *
-     * One User can have only one Candidate profile.
-     */
     @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -33,9 +23,6 @@ public class Candidate {
     )
     private User user;
 
-    /*
-     * Candidate profile information.
-     */
     @Column(nullable = false)
     private String fullName;
 
@@ -48,25 +35,12 @@ public class Candidate {
     @Column(length = 255)
     private String location;
 
-    /*
-     * CV information.
-     *
-     * The actual CV file is stored on the server filesystem.
-     * The database stores its original name and generated path.
-     */
     @Column(length = 255)
     private String cvFileName;
 
     @Column(length = 1000)
     private String cvFilePath;
 
-    /*
-     * Tags are currently stored as comma-separated values.
-     *
-     * Example:
-     *
-     * Java,Spring Boot,MySQL,Backend
-     */
     @Column(length = 2000)
     private String tags;
 

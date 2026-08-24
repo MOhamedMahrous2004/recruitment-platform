@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+        @Index(name = "idx_user_email", columnList = "email")
+})
 public class User {
 
     @Id
@@ -26,11 +28,9 @@ public class User {
     @Column(nullable = false)
     private String role;
 
-    // ✅ NEW: Refresh Token
     @Column(length = 500)
     private String refreshToken;
 
-    // ✅ NEW: Refresh Token Expiry
     private LocalDateTime refreshTokenExpiry;
 
     // ==================== Constructors ====================

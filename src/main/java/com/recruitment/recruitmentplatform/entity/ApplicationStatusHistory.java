@@ -6,16 +6,15 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "application_status_history")
+@Table(name = "application_status_history", indexes = {
+        @Index(name = "idx_history_app_id", columnList = "application_id")
+})
 public class ApplicationStatusHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /*
-     * Application whose status changed.
-     */
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -24,19 +23,10 @@ public class ApplicationStatusHistory {
     )
     private Application application;
 
-    /*
-     * Previous status.
-     *
-     * Null when the history record represents
-     * the initial application creation.
-     */
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
     private ApplicationStatus oldStatus;
 
-    /*
-     * New status.
-     */
     @Enumerated(EnumType.STRING)
     @Column(
             nullable = false,
@@ -44,21 +34,12 @@ public class ApplicationStatusHistory {
     )
     private ApplicationStatus newStatus;
 
-    /*
-     * Email of the user who changed the status.
-     *
-     * We store the email rather than exposing the
-     * complete User entity in the API response.
-     */
     @Column(
             nullable = false,
             length = 255
     )
     private String changedBy;
 
-    /*
-     * Date and time of the change.
-     */
     @Column(nullable = false)
     private LocalDateTime changedAt;
 

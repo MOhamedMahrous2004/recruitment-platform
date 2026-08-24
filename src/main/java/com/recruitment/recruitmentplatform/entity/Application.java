@@ -11,11 +11,14 @@ import java.time.LocalDateTime;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_candidate_job",
-                        columnNames = {
-                                "candidate_id",
-                                "job_id"
-                        }
+                        columnNames = {"candidate_id", "job_id"}
                 )
+        },
+        indexes = {
+                @Index(name = "idx_app_candidate_id", columnList = "candidate_id"),
+                @Index(name = "idx_app_job_id", columnList = "job_id"),
+                @Index(name = "idx_app_status", columnList = "status"),
+                @Index(name = "idx_app_applied_at", columnList = "appliedAt")
         }
 )
 public class Application {
@@ -24,9 +27,6 @@ public class Application {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /*
-     * Candidate who applied.
-     */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(
             name = "candidate_id",
@@ -34,9 +34,6 @@ public class Application {
     )
     private Candidate candidate;
 
-    /*
-     * Job applied for.
-     */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(
             name = "job_id",
@@ -44,9 +41,6 @@ public class Application {
     )
     private Job job;
 
-    /*
-     * Current application status.
-     */
     @Enumerated(EnumType.STRING)
     @Column(
             nullable = false,
@@ -54,27 +48,13 @@ public class Application {
     )
     private ApplicationStatus status;
 
-    /*
-     * Date and time when application
-     * was created.
-     */
     @Column(nullable = false)
     private LocalDateTime appliedAt;
 
-    /*
-     * Recruiter responsible for the application.
-     *
-     * Must be an HR user.
-     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "recruiter_id")
     private User recruiter;
 
-    /*
-     * Interviewer responsible for interviews/evaluation.
-     *
-     * Must be an INTERVIEWER user.
-     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "interviewer_id")
     private User interviewer;
