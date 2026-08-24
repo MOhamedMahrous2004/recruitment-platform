@@ -1,20 +1,9 @@
 package com.recruitment.recruitmentplatform.service;
 
-import com.recruitment.recruitmentplatform.entity.Application;
-import com.recruitment.recruitmentplatform.entity.ApplicationStatus;
-import com.recruitment.recruitmentplatform.entity.ApplicationStatusHistory;
-import com.recruitment.recruitmentplatform.entity.Candidate;
-import com.recruitment.recruitmentplatform.entity.InterviewFeedback;
-import com.recruitment.recruitmentplatform.entity.Job;
-import com.recruitment.recruitmentplatform.entity.User;
-
-import com.recruitment.recruitmentplatform.repository.ApplicationRepository;
-import com.recruitment.recruitmentplatform.repository.ApplicationStatusHistoryRepository;
-import com.recruitment.recruitmentplatform.repository.CandidateRepository;
-import com.recruitment.recruitmentplatform.repository.InterviewFeedbackRepository;
-import com.recruitment.recruitmentplatform.repository.JobRepository;
-import com.recruitment.recruitmentplatform.repository.UserRepository;
-
+import com.recruitment.recruitmentplatform.entity.*;
+import com.recruitment.recruitmentplatform.repository.*;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,285 +17,148 @@ import java.util.List;
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
-
-    private final ApplicationStatusHistoryRepository
-            applicationStatusHistoryRepository;
-
-    private final InterviewFeedbackRepository
-            interviewFeedbackRepository;
-
+    private final ApplicationStatusHistoryRepository applicationStatusHistoryRepository;
+    private final InterviewFeedbackRepository interviewFeedbackRepository;
     private final CandidateRepository candidateRepository;
-
     private final JobRepository jobRepository;
-
     private final UserRepository userRepository;
 
     public ApplicationService(
             ApplicationRepository applicationRepository,
-            ApplicationStatusHistoryRepository
-                    applicationStatusHistoryRepository,
-            InterviewFeedbackRepository
-                    interviewFeedbackRepository,
+            ApplicationStatusHistoryRepository applicationStatusHistoryRepository,
+            InterviewFeedbackRepository interviewFeedbackRepository,
             CandidateRepository candidateRepository,
             JobRepository jobRepository,
             UserRepository userRepository) {
 
-        this.applicationRepository =
-                applicationRepository;
-
-        this.applicationStatusHistoryRepository =
-                applicationStatusHistoryRepository;
-
-        this.interviewFeedbackRepository =
-                interviewFeedbackRepository;
-
-        this.candidateRepository =
-                candidateRepository;
-
-        this.jobRepository =
-                jobRepository;
-
-        this.userRepository =
-                userRepository;
+        this.applicationRepository = applicationRepository;
+        this.applicationStatusHistoryRepository = applicationStatusHistoryRepository;
+        this.interviewFeedbackRepository = interviewFeedbackRepository;
+        this.candidateRepository = candidateRepository;
+        this.jobRepository = jobRepository;
+        this.userRepository = userRepository;
     }
 
     /*
      * ==========================================
-     * APPLY TO JOB
+     * APPLY TO JOB (✅ Clear cache)
      * ==========================================
      */
-    public Application applyToJob(
-            String email,
-            Long jobId) {
+    @CacheEvict(value = "applications", allEntries = true)
+    public Application applyToJob(String email, Long jobId) {
+        User user = getUserByEmail(email);
 
-        User user =
-                getUserByEmail(email);
-
-        if (!"CANDIDATE".equalsIgnoreCase(
-                user.getRole())) {
-
-            throw new IllegalArgumentException(
-                    "Only CANDIDATE users can apply for jobs"
-            );
+        if (!"CANDIDATE".equalsIgnoreCase(user.getRole())) {
+            throw new IllegalArgumentException("Only CANDIDATE users can apply for jobs");
         }
 
-        Candidate candidate =
-                candidateRepository
-                        .findByUserId(user.getId())
-                        .orElseGet(() ->
-                                createCandidate(user)
-                        );
+        Candidate candidate = candidateRepository
+                .findByUserId(user.getId())
+                .orElseGet(() -> createCandidate(user));
 
-        Job job =
-                jobRepository
-                        .findById(jobId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Job not found with ID: "
-                                                + jobId
-                                )
-                        );
+        Job job = jobRepository
+                .findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found with ID: " + jobId));
 
-        if (applicationRepository
-                .existsByCandidateIdAndJobId(
-                        candidate.getId(),
-                        job.getId()
-                )) {
-
-            throw new IllegalArgumentException(
-                    "You have already applied to this job"
-            );
+        if (applicationRepository.existsByCandidateIdAndJobId(candidate.getId(), job.getId())) {
+            throw new IllegalArgumentException("You have already applied to this job");
         }
 
-        Application application =
-                new Application();
+        Application application = new Application();
+        application.setCandidate(candidate);
+        application.setJob(job);
+        application.setStatus(ApplicationStatus.APPLIED);
+        application.setAppliedAt(LocalDateTime.now());
 
-        application.setCandidate(
-                candidate
-        );
-
-        application.setJob(
-                job
-        );
-
-        application.setStatus(
-                ApplicationStatus.APPLIED
-        );
-
-        application.setAppliedAt(
-                LocalDateTime.now()
-        );
-
-        Application savedApplication =
-                applicationRepository.save(
-                        application
-                );
-
-        saveStatusHistory(
-                savedApplication,
-                null,
-                ApplicationStatus.APPLIED,
-                email
-        );
+        Application savedApplication = applicationRepository.save(application);
+        saveStatusHistory(savedApplication, null, ApplicationStatus.APPLIED, email);
 
         return savedApplication;
     }
 
     /*
      * ==========================================
-     * GET MY APPLICATIONS (✅ مع Pagination)
+     * GET MY APPLICATIONS
      * ==========================================
      */
-    public Page<Application> getMyApplications(
-            String email,
-            Pageable pageable) {
+    public Page<Application> getMyApplications(String email, Pageable pageable) {
+        User user = getUserByEmail(email);
+        Candidate candidate = candidateRepository
+                .findByUserId(user.getId())
+                .orElseGet(() -> createCandidate(user));
 
-        User user =
-                getUserByEmail(email);
-
-        Candidate candidate =
-                candidateRepository
-                        .findByUserId(user.getId())
-                        .orElseGet(() ->
-                                createCandidate(user)
-                        );
-
-        return applicationRepository
-                .findByCandidateIdOrderByAppliedAtDesc(
-                        candidate.getId(),
-                        pageable
-                );
+        return applicationRepository.findByCandidateIdOrderByAppliedAtDesc(candidate.getId(), pageable);
     }
 
     /*
      * ==========================================
-     * GET ALL APPLICATIONS (✅ مع Pagination)
+     * GET ALL APPLICATIONS
      * ==========================================
      */
     public Page<Application> getAllApplications(Pageable pageable) {
-
         return applicationRepository.findAll(pageable);
     }
 
     /*
      * ==========================================
-     * GET APPLICATION BY ID
+     * GET APPLICATION BY ID (✅ Cached)
      * ==========================================
      */
-    public Application getApplicationById(
-            Long id) {
-
+    @Cacheable(value = "applications", key = "#id")
+    public Application getApplicationById(Long id) {
         return applicationRepository
                 .findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Application not found with ID: "
-                                        + id
-                        )
-                );
+                .orElseThrow(() -> new RuntimeException("Application not found with ID: " + id));
     }
 
     /*
      * ==========================================
-     * GET APPLICATIONS BY JOB (✅ مع Pagination)
+     * GET APPLICATIONS BY JOB
      * ==========================================
      */
-    public Page<Application> getApplicationsByJob(
-            Long jobId,
-            Pageable pageable) {
-
-        if (!jobRepository.existsById(
-                jobId
-        )) {
-
-            throw new RuntimeException(
-                    "Job not found with ID: "
-                            + jobId
-            );
+    public Page<Application> getApplicationsByJob(Long jobId, Pageable pageable) {
+        if (!jobRepository.existsById(jobId)) {
+            throw new RuntimeException("Job not found with ID: " + jobId);
         }
-
-        return applicationRepository
-                .findByJobIdOrderByAppliedAtDesc(
-                        jobId,
-                        pageable
-                );
+        return applicationRepository.findByJobIdOrderByAppliedAtDesc(jobId, pageable);
     }
 
     /*
      * ==========================================
-     * GET APPLICATIONS BY STATUS (✅ مع Pagination)
+     * GET APPLICATIONS BY STATUS
      * ==========================================
      */
-    public Page<Application> getApplicationsByStatus(
-            ApplicationStatus status,
-            Pageable pageable) {
-
+    public Page<Application> getApplicationsByStatus(ApplicationStatus status, Pageable pageable) {
         if (status == null) {
-
-            throw new IllegalArgumentException(
-                    "Status is required"
-            );
+            throw new IllegalArgumentException("Status is required");
         }
-
-        return applicationRepository
-                .findByStatusOrderByAppliedAtDesc(
-                        status,
-                        pageable
-                );
+        return applicationRepository.findByStatusOrderByAppliedAtDesc(status, pageable);
     }
 
     /*
      * ==========================================
-     * UPDATE APPLICATION STATUS
+     * UPDATE APPLICATION STATUS (✅ Clear cache)
      * ==========================================
      */
-    public Application updateStatus(
-            Long applicationId,
-            ApplicationStatus status,
-            String changedBy) {
-
+    @CacheEvict(value = "applications", allEntries = true)
+    public Application updateStatus(Long applicationId, ApplicationStatus status, String changedBy) {
         if (status == null) {
-
-            throw new IllegalArgumentException(
-                    "Application status is required"
-            );
+            throw new IllegalArgumentException("Application status is required");
         }
-
         if (!hasText(changedBy)) {
-
-            throw new IllegalArgumentException(
-                    "Changed-by user is required"
-            );
+            throw new IllegalArgumentException("Changed-by user is required");
         }
 
-        Application application =
-                getApplicationById(
-                        applicationId
-                );
-
-        ApplicationStatus oldStatus =
-                application.getStatus();
+        Application application = getApplicationById(applicationId);
+        ApplicationStatus oldStatus = application.getStatus();
 
         if (oldStatus == status) {
-
             return application;
         }
 
-        application.setStatus(
-                status
-        );
-
-        Application savedApplication =
-                applicationRepository.save(
-                        application
-                );
-
-        saveStatusHistory(
-                savedApplication,
-                oldStatus,
-                status,
-                changedBy
-        );
+        application.setStatus(status);
+        Application savedApplication = applicationRepository.save(application);
+        saveStatusHistory(savedApplication, oldStatus, status, changedBy);
 
         return savedApplication;
     }
@@ -316,102 +168,49 @@ public class ApplicationService {
      * GET STATUS HISTORY
      * ==========================================
      */
-    public List<ApplicationStatusHistory>
-    getApplicationStatusHistory(
-            Long applicationId) {
-
-        getApplicationById(
-                applicationId
-        );
-
-        return applicationStatusHistoryRepository
-                .findByApplicationIdOrderByChangedAtAsc(
-                        applicationId
-                );
+    public List<ApplicationStatusHistory> getApplicationStatusHistory(Long applicationId) {
+        getApplicationById(applicationId);
+        return applicationStatusHistoryRepository.findByApplicationIdOrderByChangedAtAsc(applicationId);
     }
 
     /*
      * ==========================================
-     * ASSIGN RECRUITER
+     * ASSIGN RECRUITER (✅ Clear cache)
      * ==========================================
      */
-    public Application assignRecruiter(
-            Long applicationId,
-            Long recruiterId) {
+    @CacheEvict(value = "applications", allEntries = true)
+    public Application assignRecruiter(Long applicationId, Long recruiterId) {
+        Application application = getApplicationById(applicationId);
+        User recruiter = userRepository
+                .findById(recruiterId)
+                .orElseThrow(() -> new RuntimeException("Recruiter not found with ID: " + recruiterId));
 
-        Application application =
-                getApplicationById(
-                        applicationId
-                );
-
-        User recruiter =
-                userRepository
-                        .findById(recruiterId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Recruiter not found with ID: "
-                                                + recruiterId
-                                )
-                        );
-
-        if (!"HR".equalsIgnoreCase(
-                recruiter.getRole()
-        )) {
-
-            throw new IllegalArgumentException(
-                    "Assigned recruiter must have HR role"
-            );
+        if (!"HR".equalsIgnoreCase(recruiter.getRole())) {
+            throw new IllegalArgumentException("Assigned recruiter must have HR role");
         }
 
-        application.setRecruiter(
-                recruiter
-        );
-
-        return applicationRepository.save(
-                application
-        );
+        application.setRecruiter(recruiter);
+        return applicationRepository.save(application);
     }
 
     /*
      * ==========================================
-     * ASSIGN INTERVIEWER
+     * ASSIGN INTERVIEWER (✅ Clear cache)
      * ==========================================
      */
-    public Application assignInterviewer(
-            Long applicationId,
-            Long interviewerId) {
+    @CacheEvict(value = "applications", allEntries = true)
+    public Application assignInterviewer(Long applicationId, Long interviewerId) {
+        Application application = getApplicationById(applicationId);
+        User interviewer = userRepository
+                .findById(interviewerId)
+                .orElseThrow(() -> new RuntimeException("Interviewer not found with ID: " + interviewerId));
 
-        Application application =
-                getApplicationById(
-                        applicationId
-                );
-
-        User interviewer =
-                userRepository
-                        .findById(interviewerId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Interviewer not found with ID: "
-                                                + interviewerId
-                                )
-                        );
-
-        if (!"INTERVIEWER".equalsIgnoreCase(
-                interviewer.getRole()
-        )) {
-
-            throw new IllegalArgumentException(
-                    "Assigned interviewer must have INTERVIEWER role"
-            );
+        if (!"INTERVIEWER".equalsIgnoreCase(interviewer.getRole())) {
+            throw new IllegalArgumentException("Assigned interviewer must have INTERVIEWER role");
         }
 
-        application.setInterviewer(
-                interviewer
-        );
-
-        return applicationRepository.save(
-                application
-        );
+        application.setInterviewer(interviewer);
+        return applicationRepository.save(application);
     }
 
     /*
@@ -426,90 +225,39 @@ public class ApplicationService {
             String feedback) {
 
         if (evaluationScore == null) {
-
-            throw new IllegalArgumentException(
-                    "Evaluation score is required"
-            );
+            throw new IllegalArgumentException("Evaluation score is required");
         }
-
-        if (evaluationScore < 0 ||
-                evaluationScore > 10) {
-
-            throw new IllegalArgumentException(
-                    "Evaluation score must be between 0 and 10"
-            );
+        if (evaluationScore < 0 || evaluationScore > 10) {
+            throw new IllegalArgumentException("Evaluation score must be between 0 and 10");
         }
-
         if (!hasText(feedback)) {
-
-            throw new IllegalArgumentException(
-                    "Feedback is required"
-            );
+            throw new IllegalArgumentException("Feedback is required");
         }
 
-        Application application =
-                getApplicationById(
-                        applicationId
-                );
+        Application application = getApplicationById(applicationId);
 
         if (application.getInterviewer() == null) {
-
-            throw new IllegalArgumentException(
-                    "No interviewer is assigned to this application"
-            );
+            throw new IllegalArgumentException("No interviewer is assigned to this application");
         }
 
-        if (!application.getInterviewer()
-                .getEmail()
-                .equalsIgnoreCase(
-                        interviewerEmail
-                )) {
-
-            throw new IllegalArgumentException(
-                    "You are not the assigned interviewer for this application"
-            );
+        if (!application.getInterviewer().getEmail().equalsIgnoreCase(interviewerEmail)) {
+            throw new IllegalArgumentException("You are not the assigned interviewer for this application");
         }
 
-        User interviewer =
-                getUserByEmail(
-                        interviewerEmail
-                );
+        User interviewer = getUserByEmail(interviewerEmail);
 
-        if (!"INTERVIEWER".equalsIgnoreCase(
-                interviewer.getRole()
-        )) {
-
-            throw new IllegalArgumentException(
-                    "Only INTERVIEWER users can submit interview feedback"
-            );
+        if (!"INTERVIEWER".equalsIgnoreCase(interviewer.getRole())) {
+            throw new IllegalArgumentException("Only INTERVIEWER users can submit interview feedback");
         }
 
-        InterviewFeedback feedbackEntity =
-                new InterviewFeedback();
+        InterviewFeedback feedbackEntity = new InterviewFeedback();
+        feedbackEntity.setApplication(application);
+        feedbackEntity.setInterviewer(interviewer);
+        feedbackEntity.setEvaluationScore(evaluationScore);
+        feedbackEntity.setFeedback(feedback.trim());
+        feedbackEntity.setCreatedAt(LocalDateTime.now());
 
-        feedbackEntity.setApplication(
-                application
-        );
-
-        feedbackEntity.setInterviewer(
-                interviewer
-        );
-
-        feedbackEntity.setEvaluationScore(
-                evaluationScore
-        );
-
-        feedbackEntity.setFeedback(
-                feedback.trim()
-        );
-
-        feedbackEntity.setCreatedAt(
-                LocalDateTime.now()
-        );
-
-        return interviewFeedbackRepository.save(
-                feedbackEntity
-        );
+        return interviewFeedbackRepository.save(feedbackEntity);
     }
 
     /*
@@ -517,18 +265,9 @@ public class ApplicationService {
      * GET APPLICATION FEEDBACK
      * ==========================================
      */
-    public List<InterviewFeedback>
-    getApplicationFeedback(
-            Long applicationId) {
-
-        getApplicationById(
-                applicationId
-        );
-
-        return interviewFeedbackRepository
-                .findByApplicationIdOrderByCreatedAtDesc(
-                        applicationId
-                );
+    public List<InterviewFeedback> getApplicationFeedback(Long applicationId) {
+        getApplicationById(applicationId);
+        return interviewFeedbackRepository.findByApplicationIdOrderByCreatedAtDesc(applicationId);
     }
 
     /*
@@ -536,28 +275,12 @@ public class ApplicationService {
      * GET INTERVIEWER FEEDBACK
      * ==========================================
      */
-    public List<InterviewFeedback>
-    getInterviewerFeedback(
-            String interviewerEmail) {
-
-        User interviewer =
-                getUserByEmail(
-                        interviewerEmail
-                );
-
-        if (!"INTERVIEWER".equalsIgnoreCase(
-                interviewer.getRole()
-        )) {
-
-            throw new IllegalArgumentException(
-                    "User is not an INTERVIEWER"
-            );
+    public List<InterviewFeedback> getInterviewerFeedback(String interviewerEmail) {
+        User interviewer = getUserByEmail(interviewerEmail);
+        if (!"INTERVIEWER".equalsIgnoreCase(interviewer.getRole())) {
+            throw new IllegalArgumentException("User is not an INTERVIEWER");
         }
-
-        return interviewFeedbackRepository
-                .findByInterviewerIdOrderByCreatedAtDesc(
-                        interviewer.getId()
-                );
+        return interviewFeedbackRepository.findByInterviewerIdOrderByCreatedAtDesc(interviewer.getId());
     }
 
     /*
@@ -571,32 +294,13 @@ public class ApplicationService {
             ApplicationStatus newStatus,
             String changedBy) {
 
-        ApplicationStatusHistory history =
-                new ApplicationStatusHistory();
-
-        history.setApplication(
-                application
-        );
-
-        history.setOldStatus(
-                oldStatus
-        );
-
-        history.setNewStatus(
-                newStatus
-        );
-
-        history.setChangedBy(
-                changedBy
-        );
-
-        history.setChangedAt(
-                LocalDateTime.now()
-        );
-
-        applicationStatusHistoryRepository.save(
-                history
-        );
+        ApplicationStatusHistory history = new ApplicationStatusHistory();
+        history.setApplication(application);
+        history.setOldStatus(oldStatus);
+        history.setNewStatus(newStatus);
+        history.setChangedBy(changedBy);
+        history.setChangedAt(LocalDateTime.now());
+        applicationStatusHistoryRepository.save(history);
     }
 
     /*
@@ -604,17 +308,10 @@ public class ApplicationService {
      * FIND USER
      * ==========================================
      */
-    private User getUserByEmail(
-            String email) {
-
+    private User getUserByEmail(String email) {
         return userRepository
                 .findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found with email: "
-                                        + email
-                        )
-                );
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
     }
 
     /*
@@ -622,21 +319,15 @@ public class ApplicationService {
      * CREATE CANDIDATE
      * ==========================================
      */
-    private Candidate createCandidate(
-            User user) {
-
-        Candidate candidate =
-                new Candidate(
-                        user,
-                        user.getName(),
-                        user.getEmail(),
-                        null,
-                        null
-                );
-
-        return candidateRepository.save(
-                candidate
+    private Candidate createCandidate(User user) {
+        Candidate candidate = new Candidate(
+                user,
+                user.getName(),
+                user.getEmail(),
+                null,
+                null
         );
+        return candidateRepository.save(candidate);
     }
 
     /*
@@ -644,10 +335,7 @@ public class ApplicationService {
      * TEXT VALIDATION
      * ==========================================
      */
-    private boolean hasText(
-            String value) {
-
-        return value != null &&
-                !value.trim().isEmpty();
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }
