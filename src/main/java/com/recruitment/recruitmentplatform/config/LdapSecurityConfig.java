@@ -31,7 +31,7 @@ public class LdapSecurityConfig {
 
     /*
      * ==========================================
-     * LDAP CONTEXT SOURCE (تمت إضافته)
+     * LDAP CONTEXT SOURCE
      * ==========================================
      */
     @Bean
@@ -85,10 +85,8 @@ public class LdapSecurityConfig {
 
     /*
      * ==========================================
-     * AUTHENTICATION MANAGER (الترتيب الصحيح)
+     * AUTHENTICATION MANAGER
      * ==========================================
-     *
-     * الأولوية: MySQL أولاً، LDAP ثانياً.
      */
     @Bean
     public AuthenticationManager authenticationManager(
@@ -97,10 +95,10 @@ public class LdapSecurityConfig {
 
         List<AuthenticationProvider> providers = new ArrayList<>();
 
-        // ★★★ الحل السحري: MySQL أولاً عشان Admin ينجح ★★★
+
         providers.add(daoAuthenticationProvider);
 
-        // LDAP ثانياً (لـ ldapuser)
+
         LdapAuthenticationProvider ldapProvider = ldapProviderProvider.getIfAvailable();
         if (ldapProvider != null) {
             providers.add(ldapProvider);

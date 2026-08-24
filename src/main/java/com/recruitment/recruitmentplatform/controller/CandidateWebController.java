@@ -28,7 +28,7 @@ public class CandidateWebController {
         this.applicationService = applicationService;
     }
 
-    // صفحة الملف الشخصي ورفع الـ CV
+    // Upload CV
     @GetMapping("/profile")
     public String profilePage(Authentication authentication, Model model) {
         Candidate candidate = candidateService.getCandidateForUserEmail(authentication.getName());
@@ -36,7 +36,7 @@ public class CandidateWebController {
         return "candidate-profile";
     }
 
-    // رفع الـ CV من الويب (بيستخدم الـ Session Authentication مش JWT)
+    // رفع  CV من الويب (Session Authentication مش JWT)
     @PostMapping("/profile/upload")
     public String uploadCv(@RequestParam("cvFile") MultipartFile file,
                            Authentication authentication,
@@ -50,7 +50,7 @@ public class CandidateWebController {
         return "redirect:/candidate/profile";
     }
 
-    // صفحة عرض طلباتي (Applications)
+    // (Applications)
     @GetMapping("/applications")
     public String myApplications(Authentication authentication, Model model) {
         List<Application> applications = applicationService.getMyApplications(authentication.getName());

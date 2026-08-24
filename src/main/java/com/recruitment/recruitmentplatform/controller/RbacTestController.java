@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
-@SecurityRequirement(name = "bearerAuth") // ★★★ فرض التوكن على كل الـ Endpoints في هذا الـ Controller ★★★
+@SecurityRequirement(name = "bearerAuth") //
 public class RbacTestController {
 
     @Operation(

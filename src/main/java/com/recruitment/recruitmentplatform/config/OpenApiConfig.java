@@ -40,7 +40,7 @@ public class OpenApiConfig {
                                                 .description("Enter JWT token only. Example: eyJhbGciOi...")
                                 )
                 )
-                // ★★★ السطر الجديد: يفرض التوكن على كل الـ Endpoints ★★★
+                //  Endpoints
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
     }
 }
