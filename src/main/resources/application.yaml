@@ -31,11 +31,23 @@ server:
   port: 8081
 
 app:
+  # ========================
+  # LDAP SETTINGS
+  # ========================
   ldap:
     enabled: true
     user-search-base: ou=people
     user-search-filter: (uid={0})
 
+  # ========================
+  # SECURITY SETTINGS (NEW)
+  # ========================
+  security:
+    admin-email: admin@recruitment.com
+    admin-password: Admin@123
+    ldap-email: ldapuser@recruitment.com
+    ldap-username: ldapuser
+    ldap-password: Ldap@123
 
 
 # ==========================================

@@ -15,14 +15,16 @@ import com.recruitment.recruitmentplatform.repository.InterviewFeedbackRepositor
 import com.recruitment.recruitmentplatform.repository.JobRepository;
 import com.recruitment.recruitmentplatform.repository.UserRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // ★ تم إضافة هذا الاستيراد
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Transactional // ★ تم إضافة هذه التعليمة: تضمن أن كل العمليات إما تنجح كلها أو ترجع كما كانت
+@Transactional
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
@@ -152,11 +154,12 @@ public class ApplicationService {
 
     /*
      * ==========================================
-     * GET MY APPLICATIONS
+     * GET MY APPLICATIONS (✅ مع Pagination)
      * ==========================================
      */
-    public List<Application> getMyApplications(
-            String email) {
+    public Page<Application> getMyApplications(
+            String email,
+            Pageable pageable) {
 
         User user =
                 getUserByEmail(email);
@@ -170,18 +173,19 @@ public class ApplicationService {
 
         return applicationRepository
                 .findByCandidateIdOrderByAppliedAtDesc(
-                        candidate.getId()
+                        candidate.getId(),
+                        pageable
                 );
     }
 
     /*
      * ==========================================
-     * GET ALL APPLICATIONS
+     * GET ALL APPLICATIONS (✅ مع Pagination)
      * ==========================================
      */
-    public List<Application> getAllApplications() {
+    public Page<Application> getAllApplications(Pageable pageable) {
 
-        return applicationRepository.findAll();
+        return applicationRepository.findAll(pageable);
     }
 
     /*
@@ -204,11 +208,12 @@ public class ApplicationService {
 
     /*
      * ==========================================
-     * GET APPLICATIONS BY JOB
+     * GET APPLICATIONS BY JOB (✅ مع Pagination)
      * ==========================================
      */
-    public List<Application> getApplicationsByJob(
-            Long jobId) {
+    public Page<Application> getApplicationsByJob(
+            Long jobId,
+            Pageable pageable) {
 
         if (!jobRepository.existsById(
                 jobId
@@ -222,17 +227,19 @@ public class ApplicationService {
 
         return applicationRepository
                 .findByJobIdOrderByAppliedAtDesc(
-                        jobId
+                        jobId,
+                        pageable
                 );
     }
 
     /*
      * ==========================================
-     * GET APPLICATIONS BY STATUS
+     * GET APPLICATIONS BY STATUS (✅ مع Pagination)
      * ==========================================
      */
-    public List<Application> getApplicationsByStatus(
-            ApplicationStatus status) {
+    public Page<Application> getApplicationsByStatus(
+            ApplicationStatus status,
+            Pageable pageable) {
 
         if (status == null) {
 
@@ -243,7 +250,8 @@ public class ApplicationService {
 
         return applicationRepository
                 .findByStatusOrderByAppliedAtDesc(
-                        status
+                        status,
+                        pageable
                 );
     }
 
@@ -326,8 +334,6 @@ public class ApplicationService {
      * ==========================================
      * ASSIGN RECRUITER
      * ==========================================
-     *
-     * Recruiter must have role HR.
      */
     public Application assignRecruiter(
             Long applicationId,
@@ -370,8 +376,6 @@ public class ApplicationService {
      * ==========================================
      * ASSIGN INTERVIEWER
      * ==========================================
-     *
-     * Interviewer must have role INTERVIEWER.
      */
     public Application assignInterviewer(
             Long applicationId,
@@ -414,9 +418,6 @@ public class ApplicationService {
      * ==========================================
      * SUBMIT INTERVIEW FEEDBACK
      * ==========================================
-     *
-     * Only the assigned interviewer can
-     * submit feedback.
      */
     public InterviewFeedback submitFeedback(
             Long applicationId,

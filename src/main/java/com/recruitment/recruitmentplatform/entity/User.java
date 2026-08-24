@@ -3,6 +3,8 @@ package com.recruitment.recruitmentplatform.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -17,10 +19,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    /*
-     * Password must never be returned
-     * through API responses.
-     */
     @JsonIgnore
     @Column(nullable = false)
     private String password;
@@ -28,66 +26,43 @@ public class User {
     @Column(nullable = false)
     private String role;
 
+    // ✅ NEW: Refresh Token
+    @Column(length = 500)
+    private String refreshToken;
+
+    // ✅ NEW: Refresh Token Expiry
+    private LocalDateTime refreshTokenExpiry;
+
+    // ==================== Constructors ====================
     public User() {
     }
 
-    public User(
-            String name,
-            String email,
-            String password,
-            String role) {
-
+    public User(String name, String email, String password, String role) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role;
     }
 
-    public Long getId() {
-        return id;
-    }
+    // ==================== Getters & Setters ====================
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setName(
-            String name) {
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-        this.name = name;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getRefreshToken() { return refreshToken; }
+    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
 
-    public void setEmail(
-            String email) {
-
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(
-            String password) {
-
-        this.password = password;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(
-            String role) {
-
-        this.role = role;
-    }
+    public LocalDateTime getRefreshTokenExpiry() { return refreshTokenExpiry; }
+    public void setRefreshTokenExpiry(LocalDateTime refreshTokenExpiry) { this.refreshTokenExpiry = refreshTokenExpiry; }
 }

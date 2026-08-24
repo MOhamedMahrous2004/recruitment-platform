@@ -3,16 +3,13 @@ package com.recruitment.recruitmentplatform.controller;
 import com.recruitment.recruitmentplatform.entity.Candidate;
 import com.recruitment.recruitmentplatform.service.CandidateService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -85,18 +82,6 @@ public class CandidateController {
      * ==========================================
      * SINGLE CV UPLOAD
      * ==========================================
-     *
-     * POST:
-     *
-     * /api/candidate/profile/cv
-     *
-     * Content-Type:
-     *
-     * multipart/form-data
-     *
-     * file:
-     *
-     * PDF / DOC / DOCX
      */
     @PostMapping(
             value = "/api/candidate/profile/cv",
@@ -123,28 +108,6 @@ public class CandidateController {
      * ==========================================
      * BULK CV UPLOAD - HR
      * ==========================================
-     *
-     * Endpoint:
-     *
-     * POST /api/hr/candidates/bulk-cv
-     *
-     * Content-Type:
-     *
-     * multipart/form-data
-     *
-     * Parameters:
-     *
-     * files:
-     * multiple PDF/DOC/DOCX files
-     *
-     * candidateIds:
-     * candidate IDs in the same order
-     *
-     * Example:
-     *
-     * files[0]       -> candidateIds[0]
-     * files[1]       -> candidateIds[1]
-     * files[2]       -> candidateIds[2]
      */
     @PostMapping(
             value = "/api/hr/candidates/bulk-cv",
@@ -173,10 +136,6 @@ public class CandidateController {
      * ==========================================
      * BULK CV UPLOAD - ADMIN
      * ==========================================
-     *
-     * Endpoint:
-     *
-     * POST /api/admin/candidates/bulk-cv
      */
     @PostMapping(
             value = "/api/admin/candidates/bulk-cv",
@@ -227,20 +186,24 @@ public class CandidateController {
 
     /*
      * ==========================================
-     * HR SEARCH CANDIDATES
+     * HR SEARCH CANDIDATES (✅ مع Pagination)
      * ==========================================
      */
     @GetMapping(
             "/api/hr/candidates"
     )
-    public ResponseEntity<List<Candidate>>
+    public ResponseEntity<Page<Candidate>>
     searchCandidates(
             @RequestParam(required = false)
-            String search) {
+            String search,
+
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
+            Pageable pageable) {
 
         return ResponseEntity.ok(
                 candidateService.searchCandidates(
-                        search
+                        search,
+                        pageable
                 )
         );
     }
@@ -266,20 +229,24 @@ public class CandidateController {
 
     /*
      * ==========================================
-     * ADMIN SEARCH CANDIDATES
+     * ADMIN SEARCH CANDIDATES (✅ مع Pagination)
      * ==========================================
      */
     @GetMapping(
             "/api/admin/candidates"
     )
-    public ResponseEntity<List<Candidate>>
+    public ResponseEntity<Page<Candidate>>
     searchCandidatesAsAdmin(
             @RequestParam(required = false)
-            String search) {
+            String search,
+
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
+            Pageable pageable) {
 
         return ResponseEntity.ok(
                 candidateService.searchCandidates(
-                        search
+                        search,
+                        pageable
                 )
         );
     }

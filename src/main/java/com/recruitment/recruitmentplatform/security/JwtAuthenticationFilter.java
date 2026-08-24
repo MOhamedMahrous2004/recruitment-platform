@@ -38,16 +38,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        /*
-         * Get Authorization header.
-         */
         final String authHeader =
                 request.getHeader("Authorization");
 
-        /*
-         * If there is no Authorization header,
-         * continue normally.
-         */
         if (authHeader == null ||
                 !authHeader.startsWith("Bearer ")) {
 
@@ -55,56 +48,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        /*
-         * Remove "Bearer " from the beginning.
-         */
         final String jwt =
                 authHeader.substring(7);
 
         String username;
 
         try {
-
-            /*
-             * Extract email/username from JWT.
-             */
             username =
                     jwtService.extractUsername(jwt);
 
         } catch (Exception e) {
-
-            /*
-             * Invalid JWT.
-             */
             filterChain.doFilter(request, response);
             return;
         }
 
-        /*
-         * Check if the user is not already authenticated.
-         */
         if (username != null &&
                 SecurityContextHolder
                         .getContext()
                         .getAuthentication() == null) {
 
-            /*
-             * Load user from database.
-             */
             UserDetails userDetails =
                     userDetailsService
                             .loadUserByUsername(username);
 
-            /*
-             * Validate JWT.
-             */
-            if (jwtService.isTokenValid(
+            // ✅ تم التعديل هنا: isAccessTokenValid بدل isTokenValid
+            if (jwtService.isAccessTokenValid(
                     jwt,
                     userDetails)) {
 
-                /*
-                 * Create authentication object.
-                 */
                 UsernamePasswordAuthenticationToken
                         authentication =
                         new UsernamePasswordAuthenticationToken(
@@ -113,27 +84,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 userDetails.getAuthorities()
                         );
 
-                /*
-                 * Add request details.
-                 */
                 authentication.setDetails(
                         new WebAuthenticationDetailsSource()
                                 .buildDetails(request)
                 );
 
-                /*
-                 * Tell Spring Security that
-                 * the user is authenticated.
-                 */
                 SecurityContextHolder
                         .getContext()
                         .setAuthentication(authentication);
             }
         }
 
-        /*
-         * Continue the request.
-         */
         filterChain.doFilter(request, response);
     }
 }

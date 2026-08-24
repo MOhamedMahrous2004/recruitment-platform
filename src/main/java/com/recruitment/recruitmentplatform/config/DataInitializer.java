@@ -2,15 +2,32 @@ package com.recruitment.recruitmentplatform.config;
 
 import com.recruitment.recruitmentplatform.entity.User;
 import com.recruitment.recruitmentplatform.repository.UserRepository;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class DataInitializer {
+
+    // ==========================================
+    // READ VALUES FROM application.yaml
+    // ==========================================
+    @Value("${app.security.admin-email}")
+    private String adminEmail;
+
+    @Value("${app.security.admin-password}")
+    private String adminPassword;
+
+    @Value("${app.security.ldap-email}")
+    private String ldapEmail;
+
+    @Value("${app.security.ldap-username}")
+    private String ldapUsername;
+
+    @Value("${app.security.ldap-password}")
+    private String ldapPassword;
 
     @Bean
     CommandLineRunner createInitialUsers(
@@ -36,129 +53,50 @@ public class DataInitializer {
 
             if (!adminExists) {
 
-                User admin =
-                        new User();
+                User admin = new User();
 
-                admin.setName(
-                        "System Administrator"
-                );
+                admin.setName("System Administrator");
+                admin.setEmail(adminEmail); // ✅ جاية من الـ yaml
+                admin.setPassword(passwordEncoder.encode(adminPassword)); // ✅ جاية من الـ yaml
+                admin.setRole("ADMIN");
 
-                admin.setEmail(
-                        "admin@recruitment.com"
-                );
+                userRepository.save(admin);
 
-                admin.setPassword(
-                        passwordEncoder.encode(
-                                "Admin@123"
-                        )
-                );
-
-                admin.setRole(
-                        "ADMIN"
-                );
-
-                userRepository.save(
-                        admin
-                );
-
-                System.out.println(
-                        "========================================"
-                );
-
-                System.out.println(
-                        "ADMIN ACCOUNT CREATED"
-                );
-
-                System.out.println(
-                        "Email: admin@recruitment.com"
-                );
-
-                System.out.println(
-                        "Password: Admin@123"
-                );
-
-                System.out.println(
-                        "========================================"
-                );
+                System.out.println("========================================");
+                System.out.println("ADMIN ACCOUNT CREATED");
+                System.out.println("Email: " + adminEmail);
+                System.out.println("Password: " + adminPassword);
+                System.out.println("========================================");
             }
 
             /*
              * ==========================================
              * CREATE LDAP USER IN MYSQL
              * ==========================================
-             *
-             * LDAP authenticates the credentials.
-             *
-             * MySQL stores the application role.
              */
-            if (!userRepository.existsByEmail(
-                    "ldapuser@recruitment.com"
-            )) {
+            if (!userRepository.existsByEmail(ldapEmail)) {
 
-                User ldapUser =
-                        new User();
+                User ldapUser = new User();
 
-                ldapUser.setName(
-                        "LDAP User"
-                );
-
-                ldapUser.setEmail(
-                        "ldapuser@recruitment.com"
-                );
+                ldapUser.setName("LDAP User");
+                ldapUser.setEmail(ldapEmail); // ✅ جاية من الـ yaml
 
                 /*
-                 * This password is not used
-                 * for LDAP authentication.
-                 *
-                 * LDAP validates:
-                 *
-                 * ldapuser / Ldap@123
+                 * This password is not used for LDAP authentication.
+                 * LDAP validates: ldapuser / Ldap@123
                  */
-                ldapUser.setPassword(
-                        passwordEncoder.encode(
-                                "Ldap@123"
-                        )
-                );
+                ldapUser.setPassword(passwordEncoder.encode(ldapPassword)); // ✅ جاية من الـ yaml
+                ldapUser.setRole("HR");
 
-                /*
-                 * Give LDAP user HR role
-                 * for demonstration.
-                 */
-                ldapUser.setRole(
-                        "HR"
-                );
+                userRepository.save(ldapUser);
 
-                userRepository.save(
-                        ldapUser
-                );
-
-                System.out.println(
-                        "========================================"
-                );
-
-                System.out.println(
-                        "LDAP APPLICATION USER CREATED"
-                );
-
-                System.out.println(
-                        "Email: ldapuser@recruitment.com"
-                );
-
-                System.out.println(
-                        "LDAP Username: ldapuser"
-                );
-
-                System.out.println(
-                        "LDAP Password: Ldap@123"
-                );
-
-                System.out.println(
-                        "Role: HR"
-                );
-
-                System.out.println(
-                        "========================================"
-                );
+                System.out.println("========================================");
+                System.out.println("LDAP APPLICATION USER CREATED");
+                System.out.println("Email: " + ldapEmail);
+                System.out.println("LDAP Username: " + ldapUsername);
+                System.out.println("LDAP Password: " + ldapPassword);
+                System.out.println("Role: HR");
+                System.out.println("========================================");
             }
         };
     }

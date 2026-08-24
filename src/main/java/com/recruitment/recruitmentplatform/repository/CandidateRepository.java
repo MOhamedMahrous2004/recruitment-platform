@@ -1,9 +1,10 @@
 package com.recruitment.recruitmentplatform.repository;
 
 import com.recruitment.recruitmentplatform.entity.Candidate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface CandidateRepository
@@ -16,15 +17,17 @@ public interface CandidateRepository
 
     /*
      * Search Candidates by:
-     *
      * - Full name
      * - Email
      * - Tags
+     *
+     * ✅ Added Pageable for Pagination
      */
-    List<Candidate>
+    Page<Candidate>
     findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrTagsContainingIgnoreCase(
             String fullName,
             String email,
-            String tags
+            String tags,
+            Pageable pageable
     );
 }

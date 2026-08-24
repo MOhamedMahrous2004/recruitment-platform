@@ -4,6 +4,8 @@ import com.recruitment.recruitmentplatform.entity.Application;
 import com.recruitment.recruitmentplatform.entity.Candidate;
 import com.recruitment.recruitmentplatform.service.ApplicationService;
 import com.recruitment.recruitmentplatform.service.CandidateService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -36,7 +38,7 @@ public class CandidateWebController {
         return "candidate-profile";
     }
 
-    // رفع  CV من الويب (Session Authentication مش JWT)
+    // رفع CV من الويب (Session Authentication مش JWT)
     @PostMapping("/profile/upload")
     public String uploadCv(@RequestParam("cvFile") MultipartFile file,
                            Authentication authentication,
@@ -50,10 +52,15 @@ public class CandidateWebController {
         return "redirect:/candidate/profile";
     }
 
-    // (Applications)
+    // (Applications) ✅ Pagination
     @GetMapping("/applications")
     public String myApplications(Authentication authentication, Model model) {
-        List<Application> applications = applicationService.getMyApplications(authentication.getName());
+
+        Page<Application> page = applicationService.getMyApplications(
+                authentication.getName(),
+                Pageable.unpaged()
+        );
+        List<Application> applications = page.getContent();
         model.addAttribute("applications", applications);
         return "candidate-applications";
     }

@@ -2,17 +2,15 @@ package com.recruitment.recruitmentplatform.repository;
 
 import com.recruitment.recruitmentplatform.entity.Application;
 import com.recruitment.recruitmentplatform.entity.ApplicationStatus;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.List;
 
 public interface ApplicationRepository
         extends JpaRepository<Application, Long> {
 
     /*
-     * Check if candidate already applied
-     * to the same job.
+     * Check if candidate already applied to the same job.
      */
     boolean existsByCandidateIdAndJobId(
             Long candidateId,
@@ -20,26 +18,29 @@ public interface ApplicationRepository
     );
 
     /*
-     * Get applications of one candidate.
+     * ✅ Get applications of one candidate (with Pagination).
      */
-    List<Application>
+    Page<Application>
     findByCandidateIdOrderByAppliedAtDesc(
-            Long candidateId
+            Long candidateId,
+            Pageable pageable
     );
 
     /*
-     * Get applications for one job.
+     * ✅ Get applications for one job (with Pagination).
      */
-    List<Application>
+    Page<Application>
     findByJobIdOrderByAppliedAtDesc(
-            Long jobId
+            Long jobId,
+            Pageable pageable
     );
 
     /*
-     * Get applications by status.
+     * ✅ Get applications by status (with Pagination).
      */
-    List<Application>
+    Page<Application>
     findByStatusOrderByAppliedAtDesc(
-            ApplicationStatus status
+            ApplicationStatus status,
+            Pageable pageable
     );
 }

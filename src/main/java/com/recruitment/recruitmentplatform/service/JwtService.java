@@ -8,117 +8,72 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
+import java.util.function.Function;
 
 @Service
 public class JwtService {
 
-    /*
-     * Secret key used to sign and verify JWT tokens.
-     *
-     * IMPORTANT:
-     * In a real production application,
-     * this key should be stored in environment variables.
-     */
     private static final String SECRET_KEY =
             "RecruitmentPlatformSecretKeyForJWTAuthentication2026";
 
-    /*
-     * Token validity:
-     * 24 hours
-     */
-    private static final long EXPIRATION_TIME =
-            1000L * 60 * 60 * 24;
+    // Access Token: 15 minutes
+    private static final long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 15;
 
-    /**
-     * Create the SecretKey used by JWT.
-     */
+    // Refresh Token: 7 days
+    private static final long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 24 * 7;
+
     private SecretKey getSigningKey() {
-
-        return Keys.hmacShaKeyFor(
-                SECRET_KEY.getBytes(StandardCharsets.UTF_8)
-        );
+        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Generate JWT token using email and role.
-     */
-    public String generateToken(
-            String email,
-            String role) {
-
+    // ==================== ACCESS TOKEN ====================
+    public String generateAccessToken(String email, String role) {
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
                 .issuedAt(new Date())
-                .expiration(
-                        new Date(
-                                System.currentTimeMillis()
-                                        + EXPIRATION_TIME
-                        )
-                )
+                .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    /**
-     * Generate JWT token using UserDetails.
-     *
-     * This method can be useful later
-     * when integrating Spring Security UserDetails.
-     */
-    public String generateToken(UserDetails userDetails) {
+    public String generateAccessToken(UserDetails userDetails) {
+        return generateAccessToken(userDetails.getUsername(), null);
+    }
 
+    // ==================== REFRESH TOKEN ====================
+    public String generateRefreshToken(String email) {
         return Jwts.builder()
-                .subject(userDetails.getUsername())
+                .subject(email)
+                .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
-                .expiration(
-                        new Date(
-                                System.currentTimeMillis()
-                                        + EXPIRATION_TIME
-                        )
-                )
+                .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    /**
-     * Extract username/email from JWT token.
-     */
+    public LocalDateTime getRefreshTokenExpiryDate() {
+        return LocalDateTime.now().plusDays(7);
+    }
+
+    // ==================== TOKEN EXTRACTION ====================
     public String extractUsername(String token) {
-
-        Claims claims = extractAllClaims(token);
-
-        return claims.getSubject();
+        return extractClaim(token, Claims::getSubject);
     }
 
-    /**
-     * Extract role from JWT token.
-     */
-    public String extractRole(String token) {
-
-        Claims claims = extractAllClaims(token);
-
-        return claims.get("role", String.class);
-    }
-
-    /**
-     * Extract expiration date from JWT token.
-     */
     public Date extractExpiration(String token) {
-
-        Claims claims = extractAllClaims(token);
-
-        return claims.getExpiration();
+        return extractClaim(token, Claims::getExpiration);
     }
 
-    /**
-     * Extract all claims from JWT.
-     *
-     * Uses the modern JJWT 0.12.x API.
-     */
-    private Claims extractAllClaims(String token) {
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
 
+    private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -126,27 +81,18 @@ public class JwtService {
                 .getPayload();
     }
 
-    /**
-     * Check if the token is expired.
-     */
+    // ✅ فقط دالة واحدة isTokenExpired (public)
     public boolean isTokenExpired(String token) {
-
-        return extractExpiration(token)
-                .before(new Date());
+        return extractExpiration(token).before(new Date());
     }
 
-    /**
-     * Validate JWT token against the logged-in user.
-     */
-    public boolean isTokenValid(
-            String token,
-            UserDetails userDetails) {
+    // ==================== VALIDATION ====================
+    public boolean isAccessTokenValid(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
 
-        final String username =
-                extractUsername(token);
-
-        return username.equals(
-                userDetails.getUsername()
-        ) && !isTokenExpired(token);
+    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+        return isAccessTokenValid(token, userDetails); // same logic
     }
 }

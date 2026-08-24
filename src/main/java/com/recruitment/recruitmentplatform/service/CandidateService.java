@@ -4,7 +4,8 @@ import com.recruitment.recruitmentplatform.entity.Candidate;
 import com.recruitment.recruitmentplatform.entity.User;
 import com.recruitment.recruitmentplatform.repository.CandidateRepository;
 import com.recruitment.recruitmentplatform.repository.UserRepository;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -124,10 +125,6 @@ public class CandidateService {
                 file
         );
 
-        /*
-         * Parse candidate information
-         * from uploaded CV.
-         */
         applyParsedCvData(
                 candidate,
                 file
@@ -209,9 +206,6 @@ public class CandidateService {
                     file
             );
 
-            /*
-             * Parse the CV.
-             */
             applyParsedCvData(
                     candidate,
                     file
@@ -241,10 +235,6 @@ public class CandidateService {
             CvParsingService.ParsedCvData parsedData =
                     cvParsingService.parse(file);
 
-            /*
-             * Update full name only if
-             * parser found a reasonable value.
-             */
             if (StringUtils.hasText(
                     parsedData.getFullName()
             )) {
@@ -254,11 +244,6 @@ public class CandidateService {
                 );
             }
 
-            /*
-             * Do NOT replace the candidate email
-             * automatically unless the parser found
-             * a valid email.
-             */
             if (StringUtils.hasText(
                     parsedData.getEmail()
             )) {
@@ -266,13 +251,6 @@ public class CandidateService {
                 String parsedEmail =
                         parsedData.getEmail();
 
-                /*
-                 * Avoid database unique email conflicts.
-                 *
-                 * If another candidate already uses
-                 * the extracted email, we keep the
-                 * existing candidate email.
-                 */
                 boolean emailBelongsToAnotherUser =
                         userRepository
                                 .findByEmail(parsedEmail)
@@ -291,9 +269,6 @@ public class CandidateService {
                 }
             }
 
-            /*
-             * Update phone if found.
-             */
             if (StringUtils.hasText(
                     parsedData.getPhone()
             )) {
@@ -303,9 +278,6 @@ public class CandidateService {
                 );
             }
 
-            /*
-             * Update location if found.
-             */
             if (StringUtils.hasText(
                     parsedData.getLocation()
             )) {
@@ -315,9 +287,6 @@ public class CandidateService {
                 );
             }
 
-            /*
-             * Update tags / skills if found.
-             */
             if (StringUtils.hasText(
                     parsedData.getTags()
             )) {
@@ -332,15 +301,6 @@ public class CandidateService {
 
         } catch (RuntimeException e) {
 
-            /*
-             * CV upload should still succeed even if
-             * parsing could not extract useful data.
-             *
-             * This means:
-             *
-             * CV saved ✅
-             * Parsing best-effort ✅
-             */
             System.out.println(
                     "CV parsing failed: "
                             + e.getMessage()
@@ -498,17 +458,18 @@ public class CandidateService {
 
     /*
      * ==========================================
-     * SEARCH CANDIDATES
+     * SEARCH CANDIDATES (✅ مع Pagination)
      * ==========================================
      */
-    public List<Candidate> searchCandidates(
-            String search) {
+    public Page<Candidate> searchCandidates(
+            String search,
+            Pageable pageable) {
 
         if (!StringUtils.hasText(
                 search
         )) {
 
-            return candidateRepository.findAll();
+            return candidateRepository.findAll(pageable);
         }
 
         String normalizedSearch =
@@ -518,7 +479,8 @@ public class CandidateService {
                 .findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrTagsContainingIgnoreCase(
                         normalizedSearch,
                         normalizedSearch,
-                        normalizedSearch
+                        normalizedSearch,
+                        pageable
                 );
     }
 
